@@ -12,10 +12,10 @@
       };
       const HTTPS = {
         Port: "5000",
-        CertPath: "",
-        KeyPath: "",
+        CertPath: "", //Provide Here Certificate Path For Production Purpose
+        KeyPath: "", //Provide Here Key Path For Production Purpose
       };
-      const isLocal = true;
+      const isLocal = true; //For Production, isLocal = false
 
       const SERVER = new Model(isLocal, REDIS, HTTPS);
 
