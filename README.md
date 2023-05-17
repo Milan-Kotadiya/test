@@ -1,17 +1,15 @@
 # Introduction
 
-##### Typescript
+### Initialization
 
-import { Model } from "gamemilanmodel";
-import { Socket } from "socket.io";
-try {
-const REDIS = {
-Host: "127.0.0.1",
-Port: "6379",
-Password: "",
-DBNumber: "11",
-};
-
+      import { Model } from "gamemilanmodel";
+      import { Socket } from "socket.io";
+      const REDIS = {
+      Host: "127.0.0.1",
+      Port: "6379",
+      Password: "",
+      DBNumber: "11",
+      };
       const HTTPS = {
         Port: "5000",
         CertPath: "",
@@ -42,42 +40,38 @@ DBNumber: "11",
         });
       });
 
-## Express App
+### Express App
 
-const app = SERVER.ExpressApp;
+        const app = SERVER.ExpressApp;
 
-app.get('/123', (req, resp) => {
-resp.send('321');
-});
+        app.get('/123', (req, resp) => {
+        resp.send('321');
+        });
 
-## Redis
+### Redis
 
-const RedisClients = SERVER.RedisClients;
+        const RedisClients = SERVER.RedisClients;
 
-const Redis = RedisClients.Redis;
-let Key = 'CarInfo';
-let Keydata = {
-CarName: 'Ford',
-CarColour: 'Black',
-};
+        const Redis = RedisClients.Redis;
+        let Key = 'CarInfo';
+        let Keydata = {
+        CarName: 'Ford',
+        CarColour: 'Black',
+        };
 
-let SaveKey = await Redis.set(Key, JSON.stringify(Keydata));
+        let SaveKey = await Redis.set(Key, JSON.stringify(Keydata));
 
-# Pub - Sub
+### Pub - Sub
 
-const PubClient = RedisClients.pubClient;
-const SubClient = RedisClients.subClient;
-const listener = (message, channel) => console.log(message, channel);
-await SubClient.subscribe('check', listener);
-await PubClient.publish('Greeting', 'Hello World');
+        const PubClient = RedisClients.pubClient;
+        const SubClient = RedisClients.subClient;
+        const listener = (message, channel) => console.log(message, channel);
+        await SubClient.subscribe('check', listener);
+        await PubClient.publish('Greeting', 'Hello World');
 
-# RedLock
+### RedLock
 
-const redlock = SERVER.Redlock;
-let lock = await redlock.acquire(['a'], 5000);
-//Do Something Here ....
-await lock.release();
-
-} catch (error:any) {
-console.log(`error msg :: ${error.message}`);
-}
+        const redlock = SERVER.Redlock;
+        let lock = await redlock.acquire(['a'], 5000);
+        //Do Something Here ....
+        await lock.release();
