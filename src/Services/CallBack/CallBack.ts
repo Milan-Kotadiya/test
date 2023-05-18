@@ -1,5 +1,5 @@
 import { io } from '../../Connections/Socket';
-import { CallBackInterface } from '../../Interface/CallBackInterface';
+import { CallBackInterface } from '../../Interface';
 
 export const CallBack = (CALLBACK: CallBackInterface) => {
   try {

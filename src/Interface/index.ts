@@ -1,7 +1,6 @@
+import { Socket } from 'socket.io';
 import { Game } from '../Services/Constructors/GameConstructor';
 import { Player } from '../Services/Constructors/PlayerConstructor';
-import { TableInterface } from './RedisInterface';
-import { REMATCH } from './RematchDataInterface';
 
 export interface REDISConnection {
   Host: string;
@@ -15,25 +14,68 @@ export interface HTTPSConnection {
   CertPath: string;
   KeyPath: string;
 }
-export interface RedisFunctionList {
-  SetKey: (Key: string, KeyData: any) => Promise<any>;
-  GetKey: (Key: string) => Promise<any>;
-  DeleteKey: (Key: string) => Promise<void>;
-  AddUser: (USERDATA: Player) => Promise<void>;
-  GetUser: (UserId: string) => Promise<any>;
-  DeleteUser: (UserId: string) => Promise<void>;
-  GetEmptyTable: () => Promise<any>;
-  SetEmptyTable: (TableData: any) => Promise<void>;
-  SetTable: (TableData: TableInterface) => Promise<void>;
-  getTable: (Tableid: string) => Promise<any>;
-  DeleteTable: (Tableid: string) => Promise<void>;
-  AddTGP: (GAME: Game) => Promise<void>;
-  GetTGP: (Gameid: string) => Promise<any>;
-  DeleteTGP: (Gameid: string) => Promise<void>;
-  GetReMatchResponse: (Gameid: string) => Promise<any>;
-  SetReMatchResponse: (Gameid: string, ReMatchResponse: REMATCH) => Promise<void>;
-  DeleteReMatchResponse: (Gameid: string) => Promise<void>;
-  AddPGP: (USERDATA: any) => Promise<void>;
-  GetPGP: (UserId: string) => Promise<any>;
-  DeletePGP: (UserId: string) => Promise<void>;
+
+export interface GameBasic {
+  GameTime: number;
+  LobbyWaitTime: number;
+  PlayersPerTable: number;
+  RemacthWaitTime: number;
+  isTableWithEntryFee: boolean;
+  ReconnectWithin: number;
+  isMinPlayerModeOn: boolean;
+  MinPlayerToStartGame: number;
+}
+
+export interface EmitDataInterface {
+  ReqData: any;
+  Socket: Socket;
+}
+export interface REQDataInterface {
+  EventName: string;
+  EventDetails: any;
+}
+
+export interface CallBackInterface {
+  SendTo: string;
+  EventName: string;
+  EventDetails: object;
+  Message: string;
+}
+export interface TableInterface {
+  id: string;
+  CreatedAt: string;
+  EndAt: string;
+  Players: string[];
+}
+export interface REMATCH {
+  id: string;
+  True: string[];
+  False: string[];
+}
+
+export interface REMATCHREQdata {
+  TableId: string;
+  UserID: string;
+  Response: boolean;
+}
+
+export interface SIGNUPUSERdata {
+  UserId: string;
+  UserName: string;
+  Password: string;
+}
+
+export interface GameFlowFunctionsList {
+  SIGNUP: (
+    SignUpData: SIGNUPUSERdata,
+    socket: Socket,
+    callback: (
+      error: {
+        error: boolean;
+        message: string;
+      },
+      data: any,
+    ) => void,
+  ) => Promise<void>;
+  SendToRequester: (SendTo: string, EventName: string, EventDetails: any, Message: any) => void;
 }

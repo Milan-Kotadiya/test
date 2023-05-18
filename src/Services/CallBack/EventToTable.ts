@@ -1,6 +1,6 @@
-import { TableInterface } from '../../Interface/RedisInterface';
 import { GetUser, getTable } from '../RedisFunctions/RedisAll';
 import { io } from '../../Connections/Socket';
+import { TableInterface } from '../../Interface';
 
 export const EventToTable = async (TableId: string, EventName: string, SendData: any) => {
   try {

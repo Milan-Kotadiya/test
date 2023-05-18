@@ -1,13 +1,11 @@
 import { redisClient } from '../../Connections/Redis';
-import { RedisFunctionList } from '../../Interface';
-import { TableInterface } from '../../Interface/RedisInterface';
-import { REMATCH } from '../../Interface/RematchDataInterface';
+import { REMATCH, TableInterface } from '../../Interface';
 import { Game } from '../Constructors/GameConstructor';
 import { Player } from '../Constructors/PlayerConstructor';
 
-export const AddUser = async (USERDATA: Player) => {
+export const AddUser = async (UserId: string, USERDATA: Player) => {
   try {
-    const key = `USER:${USERDATA.id}`;
+    const key = `USER:${UserId}`;
     await redisClient.set(key, JSON.stringify(USERDATA));
     return;
   } catch (error: any) {
@@ -211,26 +209,4 @@ export const DeleteKey = async (key: string) => {
   } catch (error: any) {
     // Logger.error(`Error At DeleteKey :: ${key}, Error :: ${error.message}`);
   }
-};
-export const RedisFunctions: RedisFunctionList = {
-  SetKey,
-  GetKey,
-  DeleteKey,
-  AddUser,
-  GetUser,
-  DeleteUser,
-  GetEmptyTable,
-  SetEmptyTable,
-  SetTable,
-  getTable,
-  DeleteTable,
-  AddTGP,
-  GetTGP,
-  DeleteTGP,
-  GetReMatchResponse,
-  SetReMatchResponse,
-  DeleteReMatchResponse,
-  AddPGP,
-  GetPGP,
-  DeletePGP,
 };
