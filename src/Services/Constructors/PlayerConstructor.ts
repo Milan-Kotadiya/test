@@ -5,7 +5,6 @@ export class Player {
   Salt: string;
   soketId: string;
   TableId: string;
-  auth: string;
   chips?: number;
   GameDetails: {
     isDisconneted: boolean;
@@ -26,7 +25,6 @@ export class Player {
     this.Password = Password;
     this.Salt = Salt;
     this.soketId = soketId;
-    this.auth = '';
     this.TableId = '';
     if (chips) {
       this.chips = chips;

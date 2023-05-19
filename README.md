@@ -51,11 +51,62 @@
                   }
                   });
             }
+
+            if (Data.EventName === 'Login') {
+              await SERVER.Login(USERID, PASSWORD, socket, (error, data) => {
+                  if (error) {
+                        // Send Error To Client Like This
+                        SERVER.SendToRequester(socket.id, 'LOGIN', error.message, 'Login is Fail!!!');
+                  } else {
+                        // Send Response To Client Like This
+                        if (data.Rejoin === true) {
+                        SERVER.SendToRequester(socket.id, 'LOGIN', data.UserData, 'Login Sucessfull!!!');
+                        //Get Table Info
+                        SERVER.GetTable(data.TableId, (error, Tabledata) => {
+                        if (error) {
+                              // Send Error To Client Like This
+                              SERVER.SendToRequester(socket.id, 'REJOIN', error.message, 'REJOIN is Fail!!!');
+                        } else {
+                              //Send Table Data
+                              SERVER.SendToRequester(socket.id, 'REJOIN', Tabledata, 'REJOIN Sucessfull!!!');
+                        }
+                        });
+                        }
+                        if (data.Rejoin === false) {
+                        SERVER.SendToRequester(socket.id, 'LOGIN', data.UserData, 'Login Sucessfull!!!');
+                        //Create Table
+                        SERVER.CreateTable(data.UserData.UserId, (error, Table) => {
+                        if (error) {
+                              SERVER.SendToRequester(socket.id, 'LOGIN', error.message, 'Joining Table Process is Fail!!!');
+                        } else {
+                              SERVER.SendToRequester(socket.id, 'LOGIN', Table, 'Joining Table Process Sucessfull!!!');
+                        }
+                        });
+                        }
+                        }
+                  });
+
+                  }
+
             });
+
             socket.on('disconnect', (reason) => {
                   console.log('socket disconnected : ' + socket.id, reason);
             });
       });
+
+### Manage Game Flow
+
+            SERVER.GameTimerSays((TimerDetails) => {
+                  <!-- TimerDetails  Look's Like = {
+                              TimerTitle: 'LobbyTimer',
+                              TimerData: {
+                              LobbyTableID: 'ABCDEFGH',
+                              ForUserId: 'XYZ',
+                              MSG: 'Joining Table For UserId :: XYZ has Been Stopped, Lobby Time Over'
+                        }
+                  } -->
+                  });
 
 ### Socket IO
 

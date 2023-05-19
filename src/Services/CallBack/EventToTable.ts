@@ -1,10 +1,10 @@
 import { GetUser, getTable } from '../RedisFunctions/RedisAll';
 import { io } from '../../Connections/Socket';
-import { TableInterface } from '../../Interface';
+import { Table } from '../Constructors/TableConstructor';
 
 export const EventToTable = async (TableId: string, EventName: string, SendData: any) => {
   try {
-    const Table: TableInterface = await getTable(TableId);
+    const Table: Table = await getTable(TableId);
     if (!Table) {
       // Logger.error(`Table Not Found At EventToTable For TableId :: ${TableId}`);
     }

@@ -41,12 +41,6 @@ export interface CallBackInterface {
   EventDetails: object;
   Message: string;
 }
-export interface TableInterface {
-  id: string;
-  CreatedAt: string;
-  EndAt: string;
-  Players: string[];
-}
 export interface REMATCH {
   id: string;
   True: string[];

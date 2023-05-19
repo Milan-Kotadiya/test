@@ -1,7 +1,8 @@
 import { redisClient } from '../../Connections/Redis';
-import { REMATCH, TableInterface } from '../../Interface';
+import { REMATCH } from '../../Interface';
 import { Game } from '../Constructors/GameConstructor';
 import { Player } from '../Constructors/PlayerConstructor';
+import { Table } from '../Constructors/TableConstructor';
 
 export const AddUser = async (UserId: string, USERDATA: Player) => {
   try {
@@ -59,7 +60,7 @@ export const SetEmptyTable = async (TableData: any) => {
   }
 };
 
-export const SetTable = async (TableData: TableInterface) => {
+export const SetTable = async (TableData: Table) => {
   try {
     const key = `Table:${TableData.id}`;
     await redisClient.set(key, JSON.stringify(TableData));

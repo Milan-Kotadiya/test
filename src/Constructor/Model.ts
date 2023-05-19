@@ -1,6 +1,13 @@
 import { RedisConnection, pubClient, redisClient, subClient } from '../Connections/Redis';
 import { GameBasic, HTTPSConnection, REDISConnection, SIGNUPUSERdata } from '../Interface';
-import { GetUser, AddUser } from '../Services/RedisFunctions/RedisAll';
+import {
+  GetUser,
+  AddUser,
+  getTable,
+  GetEmptyTable,
+  SetEmptyTable,
+  SetTable,
+} from '../Services/RedisFunctions/RedisAll';
 import { HttpConnection } from '../Connections/Http';
 import { HttpsConnection } from '../Connections/Https';
 import { RedLockConnection, redLock } from '../Connections/Redlock';
@@ -12,6 +19,11 @@ import { RedisClientType } from 'redis';
 import { Player } from '../Services/Constructors/PlayerConstructor';
 import { comparePassword } from '../Services/Validation/ComparePassword';
 import { genPassword } from '../Services/Validation/GeneratePassword';
+import mongoose from 'mongoose';
+import { Table } from '../Services/Constructors/TableConstructor';
+import { SitInTable } from '../Services/MatchMaking/SitInTable';
+import EventEmitter from 'events';
+import Emitter from '../Connections/Emitter';
 
 class ModelOptions {
   options: GameBasic = {
@@ -39,6 +51,7 @@ export class Model extends ModelOptions {
     subClient: RedisClientType;
   };
   ExpressApp: express.Application;
+  GameTimer: EventEmitter;
   constructor(isLocal: boolean, Redis: REDISConnection, HTTPS: HTTPSConnection, gameBasics: GameBasic) {
     super(gameBasics);
     try {
@@ -70,6 +83,13 @@ export class Model extends ModelOptions {
       pubClient,
       subClient,
     };
+    this.GameTimer = Emitter;
+  }
+
+  GameTimerSays(callback: (Data: { TimerTitle: boolean; TimerData: any }) => void) {
+    Emitter.on('GameTimer', async (Data) => {
+      callback(Data);
+    });
   }
 
   async Login(
@@ -84,6 +104,7 @@ export class Model extends ModelOptions {
       login: {
         Rejoin: boolean;
         TableId: string;
+        UserData: Player;
       },
     ) => void,
   ): Promise<void> {
@@ -94,17 +115,18 @@ export class Model extends ModelOptions {
         const Compare = await comparePassword(Password, Player.Password, Player.Salt);
         if (Compare) {
           if (Player.TableId && Player.TableId !== '') {
+            socket.handshake.auth.UserDetails = {
+              UserId: Player.UserId,
+              TableId: Player.TableId,
+            };
             // Rejoin
-            callback(null, { Rejoin: true, TableId: Player.TableId });
+            callback(null, { Rejoin: true, TableId: Player.TableId, UserData: Player });
           } else {
-            // TODO
-            console.log(this.options);
-            if (this.options.isTableWithEntryFee === false) {
-              // Normal Empty Table
-            } else {
-            }
-
-            callback(null, { Rejoin: false, TableId: 'TableId' });
+            socket.handshake.auth.UserDetails = {
+              UserId: Player.UserId,
+              TableId: '',
+            };
+            callback(null, { Rejoin: false, TableId: null, UserData: Player });
           }
         } else {
           callback({ error: true, message: 'Password is Invalid' }, null);
@@ -177,6 +199,139 @@ export class Model extends ModelOptions {
             TableId: RedisUser.TableId,
           };
           callback(null, Get);
+        }
+      }
+    } catch (error: any) {
+      callback(
+        {
+          error: true,
+          message: error.message,
+        },
+        null,
+      );
+    }
+  }
+
+  // Get Table
+  async GetTable(
+    TableId: string,
+    callback: (
+      error: {
+        error: boolean;
+        message: string;
+      },
+      Tabledata: any,
+    ) => void,
+  ): Promise<void> {
+    try {
+      const Table = await getTable(TableId);
+      if (Table) {
+        callback(null, Table);
+      } else {
+        callback(
+          {
+            error: true,
+            message: `Table Not Found For TableId :: ${TableId}`,
+          },
+          null,
+        );
+      }
+    } catch (error: any) {
+      callback(
+        {
+          error: true,
+          message: error.message,
+        },
+        null,
+      );
+    }
+  }
+
+  // Get Table
+  async CreateTable(
+    Userid: string,
+    callback: (
+      error: {
+        error: boolean;
+        message: string;
+      },
+      Table: Table,
+    ) => void,
+    EntryFee?: number,
+  ): Promise<void> {
+    try {
+      const Player: Player = await GetUser(Userid);
+
+      if (this.options.isTableWithEntryFee === true) {
+        if (EntryFee) {
+          // Create Table With Entry Fee
+        } else {
+          callback(
+            {
+              error: true,
+              message: 'Entry Fee Is Required TO Join Table',
+            },
+            null,
+          );
+        }
+      } else {
+        let EmptyTable: any = await GetEmptyTable();
+        if (EmptyTable && EmptyTable.length === 0) {
+          // Create a new table
+          let NewEmptyTable = new mongoose.Types.ObjectId().toString();
+          EmptyTable.push(NewEmptyTable);
+          let UpdateEmptyTable = await SetEmptyTable(EmptyTable);
+          // Add in a new table
+          Player.TableId = NewEmptyTable;
+          let UpdateUser = await AddUser(Player.UserId, Player);
+          const CreateTable = new Table(NewEmptyTable, Player.UserId, this.options.GameTime);
+          await SetTable(CreateTable);
+          if (this.options.isMinPlayerModeOn === true) {
+            let AddInTable = await SitInTable(
+              CreateTable.id,
+              Player.UserId,
+              this.options.MinPlayerToStartGame,
+              this.options.LobbyWaitTime,
+              this.options.GameTime,
+            );
+          } else {
+            let AddInTable = await SitInTable(
+              CreateTable.id,
+              Player.UserId,
+              this.options.PlayersPerTable,
+              this.options.LobbyWaitTime,
+              this.options.GameTime,
+            );
+          }
+          callback(null, CreateTable);
+        }
+
+        if (EmptyTable && EmptyTable.length > 0) {
+          let NewEmptyTable = EmptyTable[0];
+          // Add in a table
+          Player.TableId = NewEmptyTable;
+          let UpdateUser = await AddUser(Player.UserId, Player);
+
+          const CreateTable = new Table(NewEmptyTable, Player.UserId, this.options.GameTime);
+          await SetTable(CreateTable);
+          if (this.options.isMinPlayerModeOn === true) {
+            let AddInTable = await SitInTable(
+              CreateTable.id,
+              Player.UserId,
+              this.options.MinPlayerToStartGame,
+              this.options.LobbyWaitTime,
+              this.options.GameTime,
+            );
+          } else {
+            let AddInTable = await SitInTable(
+              CreateTable.id,
+              Player.UserId,
+              this.options.PlayersPerTable,
+              this.options.LobbyWaitTime,
+              this.options.GameTime,
+            );
+          }
+          callback(null, CreateTable);
         }
       }
     } catch (error: any) {
