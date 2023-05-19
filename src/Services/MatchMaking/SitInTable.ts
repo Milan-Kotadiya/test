@@ -1,33 +1,38 @@
 import { StopLobbyWaitingTimer, StartLobbyWaitingTimer } from '../../Bull/LobbyTimerQueue';
+import { GameBasic } from '../../Interface';
 import { Table } from '../Constructors/TableConstructor';
 import { GetEmptyTable, SetEmptyTable, SetTable, getTable } from '../RedisFunctions/RedisAll';
+import { CollectEntryFee } from './CollectFees';
 import { StartGame } from './StartGame';
 
 const IsFull = async (
-  Table: Table,
+  TableLAST: Table,
   NumberOfTablePlayer: number,
   LobbyTime: number,
   UserId: string,
   GameTime: number,
 ) => {
   try {
-    if (Table.Players.length === NumberOfTablePlayer) {
-      //Stop Waiting Timer
-      await StopLobbyWaitingTimer(Table.id);
+    if (TableLAST.Players.length === NumberOfTablePlayer) {
+      // Stop Waiting Timer
+      await StopLobbyWaitingTimer(TableLAST.id);
 
-      //Remove This Table From Empty Table List
+      // Remove This Table From Empty Table List
       let EmptyTable: any = await GetEmptyTable();
-      const FindIndex = EmptyTable.indexOf(Table);
+      const FindIndex = EmptyTable.indexOf(TableLAST);
       EmptyTable.splice(FindIndex, 1);
+      EmptyTable = EmptyTable;
       await SetEmptyTable(EmptyTable);
 
-      //Start Game For This Table
-      await StartGame(Table.id, GameTime);
+      // Start Game For This Table
+      await StartGame(TableLAST.id, GameTime);
     } else {
-      //Start Waiting Timer
-      await StartLobbyWaitingTimer(Table.id, LobbyTime, UserId);
+      // Start Waiting Timer
+      await StartLobbyWaitingTimer(TableLAST.id, LobbyTime, UserId);
     }
-  } catch (error: any) {}
+  } catch (error: any) {
+    // Error
+  }
 };
 
 export const SitInTable = async (
@@ -38,17 +43,20 @@ export const SitInTable = async (
   GameTime: number,
 ) => {
   try {
-    let Table: Table = await getTable(TableId);
-    if (Table) {
-      if (Table.Players.includes(UserId)) {
-        await IsFull(Table, NumberOfTablePlayer, LobbyTime, UserId, GameTime);
+    let TableLAST: Table = await getTable(TableId);
+    if (TableLAST) {
+      if (TableLAST.Players.includes(UserId)) {
+        await IsFull(TableLAST, NumberOfTablePlayer, LobbyTime, UserId, GameTime);
       } else {
-        if (Table.Players.length < NumberOfTablePlayer) {
-          Table.Players.push(UserId);
-          await SetTable(Table);
-          await IsFull(Table, NumberOfTablePlayer, LobbyTime, UserId, GameTime);
+        if (TableLAST.Players.length < NumberOfTablePlayer) {
+          TableLAST.Players.push(UserId);
+          TableLAST = TableLAST;
+          await SetTable(TableLAST);
+          await IsFull(TableLAST, NumberOfTablePlayer, LobbyTime, UserId, GameTime);
         }
       }
     }
-  } catch (error: any) {}
+  } catch (error: any) {
+    // Error
+  }
 };

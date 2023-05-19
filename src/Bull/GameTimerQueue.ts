@@ -1,17 +1,24 @@
 import Bull from 'bull';
-import { Game } from '../Services/Constructors/GameConstructor';
 import { GetTGP, AddTGP } from '../Services/RedisFunctions/RedisAll';
+import Emitter from '../Connections/Emitter';
 
 const GameTimerQueue = new Bull('game-timer-queue');
 
-GameTimerQueue.process(async function (job, done) {
-  let TGP: Game = await GetTGP(job.data.Tableid);
+GameTimerQueue.process(async (job, done) => {
+  let TGP: any = await GetTGP(job.data.Tableid);
   TGP.GameOverReason = `Game Time Over`;
+  TGP = TGP;
   await AddTGP(TGP);
-  // Emitter.emit(Constant.Socket.GAMEOVER, job.data.Tableid);
   done();
 });
-GameTimerQueue.on('completed', function (job, result) {
+GameTimerQueue.on('completed', (job, result) => {
+  Emitter.emit('GameTimer', {
+    TimerTitle: 'GameTimeOver',
+    TimerData: {
+      GameId: job.id,
+      MSG: `Game Time Over for TableId :: ${job.id}`,
+    },
+  });
   // Logger.info(`Game Over Timer Work Completed, For TableId :: ${job.id} `);
 });
 GameTimerQueue.on('failed', (job, err) => {
@@ -24,18 +31,10 @@ GameTimerQueue.on('failed', (job, err) => {
 
 export const StartGameTimer = async (Tableid: string, GameTime: number) => {
   try {
-    let isAvailabe = await GameTimerQueue.getJob(Tableid);
-    if (isAvailabe) {
-      return;
-    }
+    const isAvailabe = await GameTimerQueue.getJob(Tableid);
 
     if (!isAvailabe) {
-      await GameTimerQueue.add(
-        { Tableid: Tableid },
-        { delay: GameTime * 60 * 1000, jobId: Tableid, removeOnComplete: true },
-      );
-
-      return;
+      await GameTimerQueue.add({ Tableid }, { delay: GameTime * 60 * 1000, jobId: Tableid, removeOnComplete: true });
     }
   } catch (error: any) {
     // Logger.error(
@@ -46,7 +45,7 @@ export const StartGameTimer = async (Tableid: string, GameTime: number) => {
 
 export const StopGameTimer = async (Tableid: string) => {
   try {
-    let JOB = await GameTimerQueue.getJob(Tableid);
+    const JOB = await GameTimerQueue.getJob(Tableid);
     if (JOB) {
       JOB.remove();
     }

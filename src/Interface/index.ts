@@ -35,12 +35,6 @@ export interface REQDataInterface {
   EventDetails: any;
 }
 
-export interface CallBackInterface {
-  SendTo: string;
-  EventName: string;
-  EventDetails: object;
-  Message: string;
-}
 export interface REMATCH {
   id: string;
   True: string[];

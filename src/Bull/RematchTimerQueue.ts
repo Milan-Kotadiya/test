@@ -1,13 +1,13 @@
 import Bull from 'bull';
-import Emitter from '../Connections/Emitter';
+import { RematchCheck } from '../Services/MatchMaking/Rematchcheck';
 
 const RematchTimerQueue = new Bull('Rematch-timer-queue');
 
-RematchTimerQueue.process(async function (job, done) {
+RematchTimerQueue.process(async (job, done) => {
   // await RematchCheck(job.data.Tableid);
   done();
 });
-RematchTimerQueue.on('completed', function (job, result) {
+RematchTimerQueue.on('completed', (job, result) => {
   // Logger.info(`Game Rematch Timer Work Completed, For TableId :: ${job.id}`);
 });
 RematchTimerQueue.on('failed', (job, err) => {
@@ -20,18 +20,10 @@ RematchTimerQueue.on('failed', (job, err) => {
 
 export const StartRematchTimer = async (Tableid: string, RematchTime: number) => {
   try {
-    let isAvailabe = await RematchTimerQueue.getJob(Tableid);
-    if (isAvailabe) {
-      return;
-    }
+    const isAvailabe = await RematchTimerQueue.getJob(Tableid);
 
     if (!isAvailabe) {
-      await RematchTimerQueue.add(
-        { Tableid: Tableid },
-        { delay: RematchTime * 1000, jobId: Tableid, removeOnComplete: true },
-      );
-
-      return;
+      await RematchTimerQueue.add({ Tableid }, { delay: RematchTime * 1000, jobId: Tableid, removeOnComplete: true });
     }
   } catch (error: any) {
     // Logger.error(
@@ -42,7 +34,7 @@ export const StartRematchTimer = async (Tableid: string, RematchTime: number) =>
 
 export const StopRematchTimer = async (Tableid: string) => {
   try {
-    let JOB = await RematchTimerQueue.getJob(Tableid);
+    const JOB = await RematchTimerQueue.getJob(Tableid);
     if (JOB) {
       JOB.remove();
     }

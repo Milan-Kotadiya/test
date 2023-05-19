@@ -12,25 +12,27 @@ import {
 
 export const ClearGame = async (TableId: string) => {
   try {
-    let Table: Table = await getTable(TableId);
+    const TableLSAT: Table = await getTable(TableId);
 
-    //Delete TGP
+    // Delete TGP
     await DeleteTGP(TableId);
 
-    //Delete Table
+    // Delete Table
     await DeleteTable(TableId);
 
-    //Delete PGP'S And Remove Table Id From Player
-    for (let PI = 0; PI < Table.Players.length; PI++) {
-      const PlayerID = Table.Players[PI];
-      //Remove Table Id From Player
-      let PlayerNew: Player = await GetUser(PlayerID);
+    // Delete PGP'S And Remove Table Id From Player
+    const PlayerArray = TableLSAT.Players;
+
+    for (const playerId of PlayerArray) {
+      // Remove Table Id From Player
+      let PlayerNew: Player = await GetUser(playerId);
       PlayerNew.TableId = '';
+      PlayerNew = PlayerNew;
       await AddUser(PlayerNew.UserId, PlayerNew);
-      //Delete PGP
-      await DeletePGP(PlayerID);
+      // Delete PGP
+      await DeletePGP(playerId);
     }
-    //Delete Rematch
+    // Delete Rematch
     await DeleteReMatchResponse(TableId);
   } catch (error: any) {
     // Logger.error(

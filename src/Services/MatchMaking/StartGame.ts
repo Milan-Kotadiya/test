@@ -1,15 +1,27 @@
 import { StartGameTimer } from '../../Bull/GameTimerQueue';
-import { EventToTable } from '../CallBack/EventToTable';
+import Emitter from '../../Connections/Emitter';
+import { Table } from '../Constructors/TableConstructor';
+import { getTable } from '../RedisFunctions/RedisAll';
 import { CollectEntryFee } from './CollectFees';
 
 export const StartGame = async (TableId: string, GameTime: number) => {
   try {
-    // Sending Event TO Client Join Table
-    await EventToTable(TableId, 'Join Table', { TableId: TableId });
+    const TableLSAT: Table = await getTable(TableId);
     // Start Game Timer
     await StartGameTimer(TableId, GameTime);
     // Collect Entry Fees
-    await CollectEntryFee(TableId);
+    if (TableLSAT.EntryFee) {
+      await CollectEntryFee(TableId);
+    }
     // Start Game Process
-  } catch (error: any) {}
+    Emitter.emit('GameTimer', {
+      TimerTitle: 'GameCreated',
+      TimerData: {
+        GameId: TableId,
+        MSG: `GameCreated  for TableId :: ${TableId}`,
+      },
+    });
+  } catch (error: any) {
+    // Error
+  }
 };

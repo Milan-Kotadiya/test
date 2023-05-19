@@ -6,11 +6,8 @@ import { RedisClientType } from 'redis';
 import { Player } from '../Services/Constructors/PlayerConstructor';
 import { Table } from '../Services/Constructors/TableConstructor';
 import EventEmitter from 'events';
-declare class ModelOptions {
-    options: GameBasic;
-    constructor(options: GameBasic);
-}
-export declare class Model extends ModelOptions {
+import { ModelOptions } from './GameBasicClass';
+export declare class Game extends ModelOptions {
     SocketIO: Server;
     Redlock: any;
     RedisClients: {
@@ -22,7 +19,7 @@ export declare class Model extends ModelOptions {
     GameTimer: EventEmitter;
     constructor(isLocal: boolean, Redis: REDISConnection, HTTPS: HTTPSConnection, gameBasics: GameBasic);
     GameTimerSays(callback: (Data: {
-        TimerTitle: boolean;
+        TimerTitle: string;
         TimerData: any;
     }) => void): void;
     Login(UserID: string, Password: string, socket: Socket, callback: (error: {
@@ -46,5 +43,5 @@ export declare class Model extends ModelOptions {
         error: boolean;
         message: string;
     }, Table: Table) => void, EntryFee?: number): Promise<void>;
+    SendEventToUser(UserId: string, EventName: string, EventDetails: any, Message: string): Promise<void>;
 }
-export {};

@@ -1,12 +1,10 @@
 {
   "name": "gamemilanmodel",
-  "version": "1.0.9",
+  "version": "1.1.0",
   "description": "\"# Package For Create Simple Backend Server With Multiple Functionalities\"",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
   "scripts": {
-    "start" : "nodemon lib/index.js",
-    "watch" : "tsc --w",
     "test": "jest --config jestconfig.json",
     "build": "tsc",
     "format": "prettier --write \"src/**/*.ts\" ",

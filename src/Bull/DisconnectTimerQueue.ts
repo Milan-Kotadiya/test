@@ -2,6 +2,7 @@ import Bull from 'bull';
 import { Player } from '../Services/Constructors/PlayerConstructor';
 import { AddTGP, AddUser, GetTGP, GetUser } from '../Services/RedisFunctions/RedisAll';
 import { Game } from '../Services/Constructors/GameConstructor';
+import Emitter from '../Connections/Emitter';
 
 const DisconnectTimerQueue = new Bull('disconnect-timer-queue');
 
@@ -10,31 +11,38 @@ interface JobData {
   PlayerId: string;
 }
 
-const DisconnectTimerWork = async (JobData: JobData) => {
+const DisconnectTimerWork = async (JOBDATA: JobData) => {
   try {
-    let PLAYER: Player = await GetUser(JobData.PlayerId);
+    let PLAYER: Player = await GetUser(JOBDATA.PlayerId);
     if (PLAYER.GameDetails.isDisconneted === true) {
-      //UPdate Player Status
+      //  UPdate Player Status
       PLAYER.TableId = '';
       PLAYER.GameDetails.isDisconneted = false;
       PLAYER.GameDetails.DisconnectedAt = '';
+      PLAYER = PLAYER;
       await AddUser(PLAYER.UserId, PLAYER);
-      let TGP: Game = await GetTGP(JobData.Tableid);
+      let TGP: Game = await GetTGP(JOBDATA.Tableid);
       let Players = TGP.Players;
-      Players.splice(Players.indexOf(JobData.PlayerId), 1);
+      Players = Players.splice(Players.indexOf(JOBDATA.PlayerId), 1);
       if (Players.length === 1) {
-        //TGP Update
+        // TGP Update
         TGP.isWinner = true;
         TGP.winner = Players[0];
-        TGP.GameOverReason = `Opponent :: ${JobData.PlayerId}, Left The Game`;
+        TGP.GameOverReason = `Opponent :: ${JOBDATA.PlayerId}, Left The Game`;
+        TGP = TGP;
         await AddTGP(TGP);
 
-        //Game Over
-        // await GameOver(JobData.Tableid);
-        return;
+        // Game Over
+        Emitter.emit('GameTimer', {
+          TimerTitle: 'AllPlayerLeft',
+          TimerData: {
+            TableID: JOBDATA.Tableid,
+            Winner: JOBDATA.PlayerId,
+            MSG: `All Player Left The Game, Winner:: ${JOBDATA.PlayerId}, And Game Id :: ${JOBDATA.Tableid}`,
+          },
+        });
       } else {
         await AddTGP(TGP);
-        return;
       }
     }
   } catch (error: any) {
@@ -42,14 +50,19 @@ const DisconnectTimerWork = async (JobData: JobData) => {
   }
 };
 
-DisconnectTimerQueue.process(async function (job, done) {
+DisconnectTimerQueue.process(async (job, done) => {
   await DisconnectTimerWork(job.data);
   done();
 });
-DisconnectTimerQueue.on('completed', function (job, result) {
-  // Logger.info(
-  //   `User Removed From Game Userid :: ${job.id}, And Game Id :: ${job.data.Tableid}`
-  // );
+DisconnectTimerQueue.on('completed', (job, result) => {
+  Emitter.emit('GameTimer', {
+    TimerTitle: 'DisconnectTimer',
+    TimerData: {
+      TableID: job.data.Tableid,
+      ForUserId: job.id,
+      MSG: `User Removed From Game Userid :: ${job.id}, And Game Id :: ${job.data.Tableid}`,
+    },
+  });
 });
 DisconnectTimerQueue.on('failed', (job, err) => {
   // Logger.info(
@@ -64,18 +77,13 @@ export const StartDisconnectTimer = async (PlayerId: string, Tableid: string, Di
     // Logger.info(
     //   `User Disconnected Userid :: ${PlayerId}, And He Was In Game, Game Id :: ${Tableid}`
     // );
-    let isAvailabe = await DisconnectTimerQueue.getJob(Tableid);
-    if (isAvailabe) {
-      return;
-    }
+    const isAvailabe = await DisconnectTimerQueue.getJob(Tableid);
 
     if (!isAvailabe) {
       await DisconnectTimerQueue.add(
-        { Tableid: Tableid, PlayerId: PlayerId },
+        { Tableid, PlayerId },
         { delay: DisconnectTime * 1000, jobId: PlayerId, removeOnComplete: true },
       );
-
-      return;
     }
   } catch (error: any) {
     // Logger.error(
@@ -86,7 +94,7 @@ export const StartDisconnectTimer = async (PlayerId: string, Tableid: string, Di
 
 export const StopDisconnectTimer = async (PlayerId: string) => {
   try {
-    let JOB = await DisconnectTimerQueue.getJob(PlayerId);
+    const JOB = await DisconnectTimerQueue.getJob(PlayerId);
     if (JOB) {
       JOB.remove();
     }

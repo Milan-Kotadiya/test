@@ -38,13 +38,13 @@ export const DeleteUser = async (UserId: string) => {
 export const GetEmptyTable = async () => {
   try {
     const key = `EmptyTable:Table`;
-    let Table = await redisClient.get(key);
-    Table = JSON.parse(Table);
-    if (!Table) {
-      Table = [];
-      return Table;
+    let TableLL = await redisClient.get(key);
+    TableLL = JSON.parse(TableLL);
+    if (!TableLL) {
+      TableLL = [];
+      return TableLL;
     } else {
-      return Table;
+      return TableLL;
     }
   } catch (error: any) {
     // Logger.error(`Error At GetEmptyTable :: ${error.message}`);
@@ -72,10 +72,10 @@ export const SetTable = async (TableData: Table) => {
 export const getTable = async (Tableid: string) => {
   try {
     const key = `Table:${Tableid}`;
-    let Table = await redisClient.get(key);
-    Table = JSON.parse(Table);
-    if (Table) {
-      return Table;
+    const TableREMEN = await redisClient.get(key);
+    const NEWDATA = JSON.parse(TableREMEN);
+    if (TableREMEN) {
+      return NEWDATA;
     }
   } catch (error: any) {
     // Logger.error(`Error At SetEmptyTable :: ${error.message}`);

@@ -1,3 +1,3 @@
-import { Model } from './Constructor/Model';
+import { Game } from './Constructor/Model';
 declare const Greeter: (name: string) => string;
-export { Greeter, Model };
+export { Greeter, Game };

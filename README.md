@@ -7,7 +7,7 @@
 
 ### How to use
 
-      import { Model } from "gamemilanmodel";
+      import { Game } from "gamemilanmodel";
       import { Socket } from "socket.io";
       const REDIS = {
             Host: "127.0.0.1",
@@ -30,7 +30,7 @@
       };
       const isLocal = true; //For Production, isLocal = false
 
-      const SERVER = new Model(isLocal, REDIS, HTTPS , GameBasicInfo);
+      const SERVER = new Game(isLocal, REDIS, HTTPS , GameBasicInfo);
 
 ### Hot Feature Of This Package - Gameflow
 
@@ -97,7 +97,7 @@
 
 ### Manage Game Flow
 
-            SERVER.GameTimerSays((TimerDetails) => {
+            SERVER.GameTimerSays(async (TimerDetails) => {
                   <!-- TimerDetails  Look's Like = {
                               TimerTitle: 'LobbyTimer',
                               TimerData: {
@@ -106,6 +106,10 @@
                               MSG: 'Joining Table For UserId :: XYZ has Been Stopped, Lobby Time Over'
                         }
                   } -->
+                  if (TimerDetails.TimerTitle == 'LobbyTimer') {
+                        await SERVER.SendEventToUser(TimerDetails.TimerData.ForUserId, 'Join Table', null, 'Join Table Is Full');
+                  }
+
                   });
 
 ### Socket IO

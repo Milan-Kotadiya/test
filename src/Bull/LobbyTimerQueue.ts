@@ -15,25 +15,25 @@ const LobbyTimerQueue = new Bull('lobby-timer-queue');
 
 const LobbyTimerQueueWork = async (Tableid: string) => {
   try {
-    let Table: Table = await getTable(Tableid);
+    const Tablel: Table = await getTable(Tableid);
     if (!Table) {
       // Logger.error(
       //   `Table Not Found At LobbyTimerQueueWork To Remove Player For TableId :: ${Tableid}`
       // );
     }
-    let PlayerArray = Table.Players;
-    for (let index = 0; index < PlayerArray.length; index++) {
-      const PlayerId = PlayerArray[index];
-      let Player: Player = await GetUser(PlayerId);
-      Player.TableId = '';
-      await AddUser(Player.UserId, Player);
+    const PlayerArray = Tablel.Players;
+    for (const playerId of PlayerArray) {
+      let Playerl: Player = await GetUser(playerId);
+      Playerl.TableId = '';
+      Playerl = Playerl;
+      await AddUser(Playerl.UserId, Playerl);
     }
-    //Delete Table
+    // Delete Table
     await DeleteTable(Tableid);
-    //Remove This Table From Empty Table List
+    // Remove This Table From Empty Table List
     let EmptyTable: any = await GetEmptyTable();
-    let FindIndex = EmptyTable.indexOf(Table);
-    EmptyTable.splice(FindIndex, 1);
+    const FindIndex = EmptyTable.indexOf(Table);
+    EmptyTable = EmptyTable.splice(FindIndex, 1);
     await SetEmptyTable(EmptyTable);
 
     // Create Emmiter
@@ -44,11 +44,11 @@ const LobbyTimerQueueWork = async (Tableid: string) => {
   }
 };
 
-LobbyTimerQueue.process(async function (job, done) {
+LobbyTimerQueue.process(async (job, done) => {
   await LobbyTimerQueueWork(job.data.Tableid);
   done();
 });
-LobbyTimerQueue.on('completed', function (job, result) {
+LobbyTimerQueue.on('completed', (job, result) => {
   Emitter.emit('GameTimer', {
     TimerTitle: 'LobbyTimer',
     TimerData: {
@@ -69,11 +69,11 @@ LobbyTimerQueue.on('failed', (job, err) => {
 
 export const StartLobbyWaitingTimer = async (Tableid: string, LobbyWaitTime: number, UserID: string) => {
   try {
-    let isAvailabe = await LobbyTimerQueue.getJob(Tableid);
+    const isAvailabe = await LobbyTimerQueue.getJob(Tableid);
 
     if (!isAvailabe) {
       await LobbyTimerQueue.add(
-        { Tableid: Tableid, UserId: UserID },
+        { Tableid, UserId: UserID },
         { delay: LobbyWaitTime * 1000, jobId: Tableid, removeOnComplete: true },
       );
     }
@@ -86,7 +86,7 @@ export const StartLobbyWaitingTimer = async (Tableid: string, LobbyWaitTime: num
 
 export const StopLobbyWaitingTimer = async (Tableid: string) => {
   try {
-    let JOB = await LobbyTimerQueue.getJob(Tableid);
+    const JOB = await LobbyTimerQueue.getJob(Tableid);
     if (JOB) {
       JOB.remove();
     }

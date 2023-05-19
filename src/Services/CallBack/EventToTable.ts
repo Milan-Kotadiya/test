@@ -4,11 +4,11 @@ import { Table } from '../Constructors/TableConstructor';
 
 export const EventToTable = async (TableId: string, EventName: string, SendData: any) => {
   try {
-    const Table: Table = await getTable(TableId);
-    if (!Table) {
+    const TableL: Table = await getTable(TableId);
+    if (!TableL) {
       // Logger.error(`Table Not Found At EventToTable For TableId :: ${TableId}`);
     }
-    const PlayerArray = Table.Players;
+    const PlayerArray = TableL.Players;
     for (const playerId of PlayerArray) {
       const Player: any = await GetUser(playerId);
       const socketid = Player.soketId;

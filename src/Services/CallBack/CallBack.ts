@@ -1,19 +1,16 @@
 import { io } from '../../Connections/Socket';
-import { CallBackInterface } from '../../Interface';
+import { Player } from '../Constructors/PlayerConstructor';
+import { GetUser } from '../RedisFunctions/RedisAll';
 
-export const CallBack = (CALLBACK: CallBackInterface) => {
+export const SendEventToUser = async (UserId: string, EventName: string, EventDetails: any, Message: string) => {
   try {
-    // Logger.info(
-    //   `RES SEND ====> UserID:: ${CALLBACK.SendTo}, EVENTNAME :: ${
-    //     CALLBACK.EventName
-    //   }, EVENTDETAILS :: ${JSON.stringify(CALLBACK.EventDetails)}`
-    // );
-    io.to(CALLBACK.SendTo).emit(
-      'RES',
+    const PlayerLAST: Player = await GetUser(UserId);
+
+    io.to(PlayerLAST.soketId).emit(
+      EventName,
       JSON.stringify({
-        EventName: CALLBACK.EventName,
-        EventDetails: CALLBACK.EventDetails,
-        Message: CALLBACK.Message,
+        EventDetails,
+        Message,
       }),
     );
   } catch (error: any) {
