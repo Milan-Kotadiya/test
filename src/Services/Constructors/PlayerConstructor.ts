@@ -18,7 +18,7 @@ export class Player {
     Password: string,
     Salt: string,
     soketId: string,
-    chips: number = null,
+    chips?: number,
   ) {
     this.UserId = playerid;
     this.UserName = username;

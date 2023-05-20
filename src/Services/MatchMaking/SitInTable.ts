@@ -11,6 +11,7 @@ const IsFull = async (
   LobbyTime: number,
   UserId: string,
   GameTime: number,
+  remachtime: number
 ) => {
   try {
     if (TableLAST.Players.length === NumberOfTablePlayer) {
@@ -19,13 +20,13 @@ const IsFull = async (
 
       // Remove This Table From Empty Table List
       let EmptyTable: any = await GetEmptyTable();
-      const FindIndex = EmptyTable.indexOf(TableLAST);
+      const FindIndex = EmptyTable.indexOf(TableLAST.id);
       EmptyTable.splice(FindIndex, 1);
       EmptyTable = EmptyTable;
       await SetEmptyTable(EmptyTable);
 
       // Start Game For This Table
-      await StartGame(TableLAST.id, GameTime);
+      await StartGame(TableLAST.id, GameTime,NumberOfTablePlayer,remachtime);
     } else {
       // Start Waiting Timer
       await StartLobbyWaitingTimer(TableLAST.id, LobbyTime, UserId);
@@ -41,18 +42,19 @@ export const SitInTable = async (
   NumberOfTablePlayer: number,
   LobbyTime: number,
   GameTime: number,
+  remachtime: number
 ) => {
   try {
     let TableLAST: Table = await getTable(TableId);
     if (TableLAST) {
       if (TableLAST.Players.includes(UserId)) {
-        await IsFull(TableLAST, NumberOfTablePlayer, LobbyTime, UserId, GameTime);
+        await IsFull(TableLAST, NumberOfTablePlayer, LobbyTime, UserId, GameTime,remachtime);
       } else {
         if (TableLAST.Players.length < NumberOfTablePlayer) {
           TableLAST.Players.push(UserId);
           TableLAST = TableLAST;
           await SetTable(TableLAST);
-          await IsFull(TableLAST, NumberOfTablePlayer, LobbyTime, UserId, GameTime);
+          await IsFull(TableLAST, NumberOfTablePlayer, LobbyTime, UserId, GameTime,remachtime);
         }
       }
     }

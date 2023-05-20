@@ -4,7 +4,7 @@ import { RematchCheck } from '../Services/MatchMaking/Rematchcheck';
 const RematchTimerQueue = new Bull('Rematch-timer-queue');
 
 RematchTimerQueue.process(async (job, done) => {
-  // await RematchCheck(job.data.Tableid);
+  await RematchCheck(job.data.Tableid,job.data.TotalPlayers);
   done();
 });
 RematchTimerQueue.on('completed', (job, result) => {
@@ -18,12 +18,12 @@ RematchTimerQueue.on('failed', (job, err) => {
   // );
 });
 
-export const StartRematchTimer = async (Tableid: string, RematchTime: number) => {
+export const StartRematchTimer = async (Tableid: string, RematchTime: number,TotalPlayers:number) => {
   try {
     const isAvailabe = await RematchTimerQueue.getJob(Tableid);
 
     if (!isAvailabe) {
-      await RematchTimerQueue.add({ Tableid }, { delay: RematchTime * 1000, jobId: Tableid, removeOnComplete: true });
+      await RematchTimerQueue.add({ Tableid , TotalPlayers}, { delay: RematchTime * 1000, jobId: Tableid, removeOnComplete: true });
     }
   } catch (error: any) {
     // Logger.error(

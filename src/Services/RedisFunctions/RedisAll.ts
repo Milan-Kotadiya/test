@@ -38,16 +38,40 @@ export const DeleteUser = async (UserId: string) => {
 export const GetEmptyTable = async () => {
   try {
     const key = `EmptyTable:Table`;
-    let TableLL = await redisClient.get(key);
-    TableLL = JSON.parse(TableLL);
-    if (!TableLL) {
-      TableLL = [];
-      return TableLL;
+    let EmptyTable :any = await redisClient.get(key);
+    if (!EmptyTable) {
+      const NewEmptyTable = [];
+      return NewEmptyTable;
     } else {
-      return TableLL;
+      EmptyTable = JSON.parse(EmptyTable);
+      return EmptyTable;
     }
   } catch (error: any) {
     // Logger.error(`Error At GetEmptyTable :: ${error.message}`);
+  }
+};
+export const GetEmptyTableEntryfee = async () => {
+  try {
+    const key = `EmptyTable:Entryfee`;
+    let EmptyTable :any = await redisClient.get(key);
+    if (!EmptyTable) {
+      const NewEmptyTable = [];
+      return NewEmptyTable;
+    } else {
+      EmptyTable = JSON.parse(EmptyTable);
+      return EmptyTable;
+    }
+  } catch (error: any) {
+    // Logger.error(`Error At GetEmptyTable :: ${error.message}`);
+  }
+};
+export const SetEmptyTableEntryfee = async (TableData: any) => {
+  try {
+    const key = `EmptyTable:Entryfee`;
+    await redisClient.set(key, JSON.stringify(TableData));
+    return;
+  } catch (error: any) {
+    // Logger.error(`Error At SetEmptyTable :: ${error.message}`);
   }
 };
 export const SetEmptyTable = async (TableData: any) => {

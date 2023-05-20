@@ -3,8 +3,10 @@ import {
   AddUser,
   DeleteTable,
   GetEmptyTable,
+  GetEmptyTableEntryfee,
   GetUser,
   SetEmptyTable,
+  SetEmptyTableEntryfee,
   getTable,
 } from '../Services/RedisFunctions/RedisAll';
 import { Table } from '../Services/Constructors/TableConstructor';
@@ -30,13 +32,23 @@ const LobbyTimerQueueWork = async (Tableid: string) => {
     }
     // Delete Table
     await DeleteTable(Tableid);
-    // Remove This Table From Empty Table List
-    let EmptyTable: any = await GetEmptyTable();
-    const FindIndex = EmptyTable.indexOf(Table);
-    EmptyTable = EmptyTable.splice(FindIndex, 1);
-    await SetEmptyTable(EmptyTable);
+    if(Tablel.EntryFee){
+            // Remove This Table From Empty Table List
+            const EmptyTable : {
+              Tableid: string;
+              EntryFee: number;
+          } [] = await GetEmptyTableEntryfee();
+          const index = EmptyTable.findIndex(x => x.Tableid === Tablel.id);
+            EmptyTable.splice(index, 1);
+            await SetEmptyTableEntryfee(EmptyTable)
 
-    // Create Emmiter
+    }else{
+      // Remove This Table From Empty Table List
+      const EmptyTable: any = await GetEmptyTable();
+      EmptyTable.splice(EmptyTable.indexOf(Tablel.id), 1);
+      await SetEmptyTable(EmptyTable);
+    }
+   
   } catch (error: any) {
     // Logger.error(
     //   `Error At LobbyTimerQueueWork For TableId :: ${Tableid}, Error :: ${error.message}`

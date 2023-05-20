@@ -9,6 +9,8 @@ import {
   SetTable,
   GetReMatchResponse,
   DeleteReMatchResponse,
+  GetEmptyTableEntryfee,
+  SetEmptyTableEntryfee,
 } from '../Services/RedisFunctions/RedisAll';
 import { HttpConnection } from '../Connections/Http';
 import { HttpsConnection } from '../Connections/Https';
@@ -159,6 +161,7 @@ export class Game extends ModelOptions {
       },
       data: any,
     ) => void,
+    Coins?:number
   ): Promise<void> {
     try {
       const Invalid = await GetUser(SignUpData.UserId);
@@ -172,6 +175,9 @@ export class Game extends ModelOptions {
         );
       } else {
         // let HasPassword
+        if(this.options.isTableWithEntryFee === false){
+
+        
         const HashPass = genPassword(SignUpData.Password);
 
         const RedisUser = new Player(SignUpData.UserId, SignUpData.UserName, HashPass.hash, HashPass.salt, socket.id);
@@ -186,7 +192,35 @@ export class Game extends ModelOptions {
           };
           callback(null, Get);
         }
+      }else{
+        if(Coins){
+          const HashPass = genPassword(SignUpData.Password);
+
+          const RedisUser = new Player(SignUpData.UserId, SignUpData.UserName, HashPass.hash, HashPass.salt, socket.id,Coins);
+          // Saving in Redis
+          await AddUser(RedisUser.UserId, RedisUser);
+          const Get = await GetUser(RedisUser.UserId);
+          if (Get) {
+            // save data in Socket;
+            socket.handshake.auth.UserDetails = {
+              UserId: RedisUser.UserId,
+              TableId: RedisUser.TableId,
+            };
+            callback(null, Get);
+          }
+
+        }else{
+          callback(
+            {
+              error: true,
+              message: 'Players Current Coins Require For Entry Fee!!!',
+            },
+            null,
+          );
+        }
       }
+      
+    }
     } catch (error: any) {
       callback(
         {
@@ -250,7 +284,68 @@ export class Game extends ModelOptions {
 
       if (this.options.isTableWithEntryFee === true) {
         if (EntryFee) {
-          // TODO Create Table With Entry Fee
+          //  Create Table With Entry Fee
+              const EmptyTable : {
+        Tableid: string;
+        EntryFee: number;
+    } [] = await GetEmptyTableEntryfee();
+    if (EmptyTable && EmptyTable.length === 0) {
+        const NewEmptyTable : string = new mongoose.Types.ObjectId().toString();
+          EmptyTable.push({Tableid:NewEmptyTable,EntryFee:EntryFee});
+          await SetEmptyTableEntryfee(EmptyTable)
+          PlayerTL.TableId = NewEmptyTable;
+          PlayerTL = PlayerTL;
+          await AddUser(PlayerTL.UserId, PlayerTL);
+          const CreateTable = new Table(NewEmptyTable, PlayerTL.UserId, this.options.GameTime,EntryFee);
+          await SetTable(CreateTable);
+          if (this.options.isMinPlayerModeOn === true) {
+            await SitInTable(
+              CreateTable.id,
+              PlayerTL.UserId,
+              this.options.MinPlayerToStartGame,
+              this.options.LobbyWaitTime,
+              this.options.GameTime,
+              this.options.RemacthWaitTime
+            );
+          } else {
+            await SitInTable(
+              CreateTable.id,
+              PlayerTL.UserId,
+              this.options.PlayersPerTable,
+              this.options.LobbyWaitTime,
+              this.options.GameTime,
+              this.options.RemacthWaitTime
+            );
+          }
+          callback(null, CreateTable);
+
+    }else{
+        const NewEmptyTable = EmptyTable[0].Tableid;
+        PlayerTL.TableId = NewEmptyTable;
+          PlayerTL = PlayerTL;
+          await AddUser(PlayerTL.UserId, PlayerTL);
+          if (this.options.isMinPlayerModeOn === true) {
+            await SitInTable(
+              NewEmptyTable,
+              PlayerTL.UserId,
+              this.options.MinPlayerToStartGame,
+              this.options.LobbyWaitTime,
+              this.options.GameTime,
+              this.options.RemacthWaitTime
+            );
+          } else {
+            await SitInTable(
+              NewEmptyTable,
+              PlayerTL.UserId,
+              this.options.PlayersPerTable,
+              this.options.LobbyWaitTime,
+              this.options.GameTime,
+              this.options.RemacthWaitTime
+            );
+          }
+          const TableLAST: Table = await getTable(NewEmptyTable);
+          callback(null,TableLAST);
+    }
         } else {
           callback(
             {
@@ -261,12 +356,12 @@ export class Game extends ModelOptions {
           );
         }
       } else {
-        let EmptyTable: any = await GetEmptyTable();
+        const EmptyTable : string []= await GetEmptyTable();
         if (EmptyTable && EmptyTable.length === 0) {
           // Create a new table
-          const NewEmptyTable = new mongoose.Types.ObjectId().toString();
-          EmptyTable = EmptyTable.push(NewEmptyTable);
-          await SetEmptyTable(EmptyTable);
+          const NewEmptyTable : string = new mongoose.Types.ObjectId().toString();
+          EmptyTable.push(NewEmptyTable);
+          await SetEmptyTable(EmptyTable)
           // Add in a new table
           PlayerTL.TableId = NewEmptyTable;
           PlayerTL = PlayerTL;
@@ -280,6 +375,7 @@ export class Game extends ModelOptions {
               this.options.MinPlayerToStartGame,
               this.options.LobbyWaitTime,
               this.options.GameTime,
+              this.options.RemacthWaitTime
             );
           } else {
             await SitInTable(
@@ -288,6 +384,7 @@ export class Game extends ModelOptions {
               this.options.PlayersPerTable,
               this.options.LobbyWaitTime,
               this.options.GameTime,
+              this.options.RemacthWaitTime
             );
           }
           callback(null, CreateTable);
@@ -299,27 +396,27 @@ export class Game extends ModelOptions {
           PlayerTL.TableId = NewEmptyTable;
           PlayerTL = PlayerTL;
           await AddUser(PlayerTL.UserId, PlayerTL);
-
-          const CreateTable = new Table(NewEmptyTable, PlayerTL.UserId, this.options.GameTime);
-          await SetTable(CreateTable);
           if (this.options.isMinPlayerModeOn === true) {
             await SitInTable(
-              CreateTable.id,
+              NewEmptyTable,
               PlayerTL.UserId,
               this.options.MinPlayerToStartGame,
               this.options.LobbyWaitTime,
               this.options.GameTime,
+              this.options.RemacthWaitTime
             );
           } else {
             await SitInTable(
-              CreateTable.id,
+              NewEmptyTable,
               PlayerTL.UserId,
               this.options.PlayersPerTable,
               this.options.LobbyWaitTime,
               this.options.GameTime,
+              this.options.RemacthWaitTime
             );
           }
-          callback(null, CreateTable);
+          const TableLASTN: Table = await getTable(NewEmptyTable);
+          callback(null,TableLASTN);
         }
       }
     } catch (error: any) {

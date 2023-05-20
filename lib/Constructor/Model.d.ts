@@ -34,7 +34,7 @@ export declare class Game extends ModelOptions {
     SIGNUP(SignUpData: SIGNUPUSERdata, socket: Socket, callback: (error: {
         error: boolean;
         message: string;
-    }, data: any) => void): Promise<void>;
+    }, data: any) => void, Coins?: number): Promise<void>;
     GetTable(TableId: string, callback: (error: {
         error: boolean;
         message: string;
