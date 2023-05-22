@@ -1,14 +1,12 @@
-/// <reference types="node" />
 import { GameBasic, HTTPSConnection, REDISConnection } from '../Interface';
 import express from 'express';
 import { Server, Socket } from 'socket.io';
 import { RedisClientType } from 'redis';
 import { Player } from '../Services/Constructors/PlayerConstructor';
 import { Table } from '../Services/Constructors/TableConstructor';
-import EventEmitter from 'events';
 import { ModelOptions } from './GameBasicClass';
 export declare class Game extends ModelOptions {
-    SocketIO: Server;
+    IO: Server;
     Redlock: any;
     RedisClients: {
         Redis: RedisClientType;
@@ -16,26 +14,27 @@ export declare class Game extends ModelOptions {
         subClient: RedisClientType;
     };
     ExpressApp: express.Application;
-    GameTimer: EventEmitter;
+    GameTimer: {
+        LobbyTimer: (callback: (Data: {
+            LobbyTableID: string;
+            UserId: string;
+            MSG: string;
+        }) => void) => void;
+        GameStarted: (callback: (Data: {
+            TableID: string;
+            MSG: string;
+        }) => void) => void;
+        GameTimeOver: (callback: (Data: {
+            TableID: string;
+            MSG: string;
+        }) => void) => void;
+        RematchTimeOver: (callback: (Data: {
+            TableID: string;
+            ReMatchResponse: any;
+            MSG: string;
+        }) => void) => void;
+    };
     constructor(isLocal: boolean, Redis: REDISConnection, HTTPS: HTTPSConnection, gameBasics: GameBasic);
-    LobbyTimer(callback: (Data: {
-        LobbyTableID: string;
-        UserId: string;
-        MSG: string;
-    }) => void): void;
-    GameStarted(callback: (Data: {
-        TableID: string;
-        MSG: string;
-    }) => void): void;
-    GameTimeOver(callback: (Data: {
-        TableID: string;
-        MSG: string;
-    }) => void): void;
-    RematchTimeOver(callback: (Data: {
-        TableID: string;
-        ReMatchResponse: any;
-        MSG: string;
-    }) => void): void;
     ReMatch(Response: boolean, socket: Socket, callback: (result: {
         Status: 'Success' | 'Fail';
         message: string;

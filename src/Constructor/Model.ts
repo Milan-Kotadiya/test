@@ -7,8 +7,6 @@ import {
   GetEmptyTable,
   SetEmptyTable,
   SetTable,
-  GetReMatchResponse,
-  DeleteReMatchResponse,
   GetEmptyTableEntryfee,
   SetEmptyTableEntryfee,
 } from '../Services/RedisFunctions/RedisAll';
@@ -26,14 +24,12 @@ import { genPassword } from '../Services/Validation/GeneratePassword';
 import mongoose from 'mongoose';
 import { Table } from '../Services/Constructors/TableConstructor';
 import { SitInTable } from '../Services/MatchMaking/SitInTable';
-import EventEmitter from 'events';
-import Emitter from '../Connections/Emitter';
 import { ModelOptions } from './GameBasicClass';
 import { Rematch } from '../Services/MatchMaking/ReMatch';
-import { RematchCheck } from '../Services/MatchMaking/Rematchcheck';
+import { TimerAll } from '../Bull/TimerAll';
 
 export class Game extends ModelOptions {
-  SocketIO: Server;
+  IO: Server;
   Redlock: any;
   RedisClients: {
     Redis: RedisClientType;
@@ -41,7 +37,26 @@ export class Game extends ModelOptions {
     subClient: RedisClientType;
   };
   ExpressApp: express.Application;
-  GameTimer: EventEmitter;
+  GameTimer: {
+    LobbyTimer: (callback: (Data: {
+      LobbyTableID: string;
+      UserId: string;
+      MSG: string;
+  }) => void) => void;
+  GameStarted: (callback: (Data: {
+    TableID: string;
+    MSG: string;
+}) => void) => void;
+GameTimeOver: (callback: (Data: {
+  TableID: string;
+  MSG: string;
+}) => void) => void;
+RematchTimeOver: (callback: (Data: {
+  TableID: string;
+  ReMatchResponse: any;
+  MSG: string;
+}) => void) => void
+  };
   constructor(isLocal: boolean, Redis: REDISConnection, HTTPS: HTTPSConnection, gameBasics: GameBasic) {
     super(gameBasics);
     try {
@@ -65,7 +80,7 @@ export class Game extends ModelOptions {
       // Logger.error(`Eroor At Index.ts : ${e.message}`);
     }
 
-    this.SocketIO = io;
+    this.IO = io;
     this.Redlock = redLock;
     this.ExpressApp = app;
     this.RedisClients = {
@@ -73,37 +88,9 @@ export class Game extends ModelOptions {
       pubClient,
       subClient,
     };
-    this.GameTimer = Emitter;
+    this.GameTimer = TimerAll;
   }
 
-  LobbyTimer(callback: (Data: { LobbyTableID: string; UserId: string; MSG: string }) => void) {
-    Emitter.on('GameTimer', async (Data) => {
-      if (Data.TimerTitle === 'LobbyTimer') {
-        callback(Data.TimerData);
-      }
-    });
-  }
-  GameStarted(callback: (Data: { TableID: string; MSG: string }) => void) {
-    Emitter.on('GameTimer', async (Data) => {
-      if (Data.TimerTitle === 'GameCreated') {
-        callback(Data.TimerData);
-      }
-    });
-  }
-  GameTimeOver(callback: (Data: { TableID: string; MSG: string }) => void) {
-    Emitter.on('GameTimer', async (Data) => {
-      if (Data.TimerTitle === 'GameTimeOver') {
-        callback(Data.TimerData);
-      }
-    });
-  }
-  RematchTimeOver(callback: (Data: { TableID: string; ReMatchResponse: any; MSG: string }) => void) {
-    Emitter.on('GameTimer', async (Data) => {
-      if (Data.TimerTitle === 'RematchTimer') {
-        callback(Data.TimerData);
-      }
-    });
-  }
 
   async ReMatch(
     Response: boolean,
@@ -119,11 +106,6 @@ export class Game extends ModelOptions {
     }
   }
 
-  // GameTimerSays(callback: (Data: { TimerTitle: string; TimerData: any }) => void) {
-  //   Emitter.on('GameTimer', async (Data) => {
-  //     callback(Data);
-  //   });
-  // }
 
   async Login(
     UserID: string,
