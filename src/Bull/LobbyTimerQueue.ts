@@ -32,23 +32,27 @@ const LobbyTimerQueueWork = async (Tableid: string) => {
     }
     // Delete Table
     await DeleteTable(Tableid);
-    if(Tablel.EntryFee){
-            // Remove This Table From Empty Table List
-            const EmptyTable : {
-              Tableid: string;
-              EntryFee: number;
-          } [] = await GetEmptyTableEntryfee();
-          const index = EmptyTable.findIndex(x => x.Tableid === Tablel.id);
-            EmptyTable.splice(index, 1);
-            await SetEmptyTableEntryfee(EmptyTable)
-
-    }else{
-      // Remove This Table From Empty Table List
-      const EmptyTable: any = await GetEmptyTable();
-      EmptyTable.splice(EmptyTable.indexOf(Tablel.id), 1);
-      await SetEmptyTable(EmptyTable);
+    if (Tablel.EntryFee) {
+      let EmptyTableFee: {
+        Tableid: string;
+        EntryFee: number;
+      }[] = await GetEmptyTableEntryfee();
+      const index = EmptyTableFee.findIndex((x) => x.Tableid === Tablel.id);
+      if (index >= 0) {
+        EmptyTableFee = EmptyTableFee.splice(index, 1);
+        await SetEmptyTableEntryfee(EmptyTableFee);
+      }
     }
-   
+    if (!Tablel.EntryFee) {
+      // Remove This Table From Empty Table List
+      let EmptyTable: any = await GetEmptyTable();
+      const FindIndex = EmptyTable.indexOf(Tablel.id);
+      if (FindIndex >= 0) {
+        EmptyTable.splice(FindIndex, 1);
+        EmptyTable = EmptyTable;
+        await SetEmptyTable(EmptyTable);
+      }
+    }
   } catch (error: any) {
     // Logger.error(
     //   `Error At LobbyTimerQueueWork For TableId :: ${Tableid}, Error :: ${error.message}`

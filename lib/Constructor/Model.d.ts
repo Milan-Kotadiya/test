@@ -1,5 +1,5 @@
 /// <reference types="node" />
-import { GameBasic, HTTPSConnection, REDISConnection, SIGNUPUSERdata } from '../Interface';
+import { GameBasic, HTTPSConnection, REDISConnection } from '../Interface';
 import express from 'express';
 import { Server, Socket } from 'socket.io';
 import { RedisClientType } from 'redis';
@@ -18,10 +18,28 @@ export declare class Game extends ModelOptions {
     ExpressApp: express.Application;
     GameTimer: EventEmitter;
     constructor(isLocal: boolean, Redis: REDISConnection, HTTPS: HTTPSConnection, gameBasics: GameBasic);
-    GameTimerSays(callback: (Data: {
-        TimerTitle: string;
-        TimerData: any;
+    LobbyTimer(callback: (Data: {
+        LobbyTableID: string;
+        UserId: string;
+        MSG: string;
     }) => void): void;
+    GameStarted(callback: (Data: {
+        TableID: string;
+        MSG: string;
+    }) => void): void;
+    GameTimeOver(callback: (Data: {
+        TableID: string;
+        MSG: string;
+    }) => void): void;
+    RematchTimeOver(callback: (Data: {
+        TableID: string;
+        ReMatchResponse: any;
+        MSG: string;
+    }) => void): void;
+    ReMatch(Response: boolean, socket: Socket, callback: (result: {
+        Status: 'Success' | 'Fail';
+        message: string;
+    }) => void): Promise<void>;
     Login(UserID: string, Password: string, socket: Socket, callback: (error: {
         error: boolean;
         message: string;
@@ -31,14 +49,14 @@ export declare class Game extends ModelOptions {
         UserData: Player;
     }) => void): Promise<void>;
     SendToRequester(SendTo: string, EventName: string, EventDetails: any, Message: any): void;
-    SIGNUP(SignUpData: SIGNUPUSERdata, socket: Socket, callback: (error: {
+    SIGNUP(SignUpData: {
+        UserId: string;
+        UserName: string;
+        Password: string;
+    }, socket: Socket, callback: (error: {
         error: boolean;
         message: string;
     }, data: any) => void, Coins?: number): Promise<void>;
-    GetTable(TableId: string, callback: (error: {
-        error: boolean;
-        message: string;
-    }, Tabledata: any) => void): Promise<void>;
     CreateTable(Userid: string, callback: (error: {
         error: boolean;
         message: string;

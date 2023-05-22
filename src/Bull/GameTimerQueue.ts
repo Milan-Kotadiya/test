@@ -1,12 +1,11 @@
 import Bull from 'bull';
-import { GetTGP, AddTGP } from '../Services/RedisFunctions/RedisAll';
 import Emitter from '../Connections/Emitter';
 import { StartRematchTimer } from './RematchTimerQueue';
 
 const GameTimerQueue = new Bull('game-timer-queue');
 
 GameTimerQueue.process(async (job, done) => {
-  await StartRematchTimer(job.data.Tableid, job.data.Rematchtime ,job.data.Players)
+  await StartRematchTimer(job.data.Tableid, job.data.Rematchtime, job.data.Players);
   done();
 });
 GameTimerQueue.on('completed', async (job, result) => {
@@ -27,12 +26,29 @@ GameTimerQueue.on('failed', (job, err) => {
   // );
 });
 
-export const StartGameTimer = async (Tableid: string, GameTime: number,NumberOfTablePlayer:number, Time: number) => {
+export const UpdateGameTimerPlayer = async (Tableid: string, NumberOfTablePlayer: number) => {
+  try {
+    const JOB = await GameTimerQueue.getJob(Tableid);
+
+    if (!JOB) {
+      const NEWDATA = { Tableid: JOB.data.Tableid, Players: NumberOfTablePlayer, Rematchtime: JOB.data.Rematchtime };
+      JOB.update(NEWDATA);
+    }
+  } catch (error: any) {
+    // Logger.error(
+    //   `Error At StartGameTimer For TableId :: ${Tableid}, Error :: ${error.message}`
+    // );
+  }
+};
+export const StartGameTimer = async (Tableid: string, GameTime: number, NumberOfTablePlayer: number, Time: number) => {
   try {
     const isAvailabe = await GameTimerQueue.getJob(Tableid);
 
     if (!isAvailabe) {
-      await GameTimerQueue.add({ Tableid , Players: NumberOfTablePlayer ,Rematchtime: Time}, { delay: GameTime * 60 * 1000, jobId: Tableid, removeOnComplete: true });
+      await GameTimerQueue.add(
+        { Tableid, Players: NumberOfTablePlayer, Rematchtime: Time },
+        { delay: GameTime * 60 * 1000, jobId: Tableid, removeOnComplete: true },
+      );
     }
   } catch (error: any) {
     // Logger.error(

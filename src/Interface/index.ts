@@ -47,15 +47,13 @@ export interface REMATCHREQdata {
   Response: boolean;
 }
 
-export interface SIGNUPUSERdata {
-  UserId: string;
-  UserName: string;
-  Password: string;
-}
-
 export interface GameFlowFunctionsList {
   SIGNUP: (
-    SignUpData: SIGNUPUSERdata,
+    SignUpData: {
+      UserId: string;
+      UserName: string;
+      Password: string;
+    },
     socket: Socket,
     callback: (
       error: {
