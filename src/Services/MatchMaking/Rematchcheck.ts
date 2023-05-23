@@ -27,7 +27,8 @@ export const RematchCheck = async (TableId: string, NumberOfTablePlayer: number,
       }[] = await GetEmptyTableEntryfee();
       const index = EmptyTableFee.findIndex((x) => x.Tableid === TableSTART.id);
       if (index >= 0) {
-        EmptyTableFee = EmptyTableFee.splice(index, 1);
+        EmptyTableFee.splice(index, 1);
+        EmptyTableFee = EmptyTableFee;
         await SetEmptyTableEntryfee(EmptyTableFee);
       }
     }

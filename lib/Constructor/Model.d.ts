@@ -33,6 +33,15 @@ export declare class Game extends ModelOptions {
             ReMatchResponse: any;
             MSG: string;
         }) => void) => void;
+        TurnChange: (callback: (Data: {
+            TableID: string;
+            MSG: string;
+        }) => void) => void;
+    };
+    EventSender: {
+        EventToTable: (TableId: string, EventName: string, SendData: any) => Promise<void>;
+        SendBySocketId: (SocketId: string, EventName: string, EventDetails: any, Message: any) => void;
+        SendEventToUserByUserId: (UserId: string, EventName: string, EventDetails: any, Message: string) => Promise<void>;
     };
     constructor(isLocal: boolean, Redis: REDISConnection, HTTPS: HTTPSConnection, gameBasics: GameBasic);
     ReMatch(Response: boolean, socket: Socket, callback: (result: {
@@ -47,7 +56,6 @@ export declare class Game extends ModelOptions {
         TableId: string;
         UserData: Player;
     }) => void): Promise<void>;
-    SendToRequester(SendTo: string, EventName: string, EventDetails: any, Message: any): void;
     SIGNUP(SignUpData: {
         UserId: string;
         UserName: string;
@@ -60,5 +68,4 @@ export declare class Game extends ModelOptions {
         error: boolean;
         message: string;
     }, Table: Table) => void, EntryFee?: number): Promise<void>;
-    SendEventToUser(UserId: string, EventName: string, EventDetails: any, Message: string): Promise<void>;
 }

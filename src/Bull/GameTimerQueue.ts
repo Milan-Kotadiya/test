@@ -5,6 +5,8 @@ import { StartRematchTimer } from './RematchTimerQueue';
 const GameTimerQueue = new Bull('game-timer-queue');
 
 GameTimerQueue.process(async (job, done) => {
+  // Todo Fix me
+  // await StopTurnTimer(job.data.Tableid);
   await StartRematchTimer(job.data.Tableid, job.data.Rematchtime, job.data.Players);
   done();
 });

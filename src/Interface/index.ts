@@ -16,6 +16,8 @@ export interface HTTPSConnection {
 }
 
 export interface GameBasic {
+  isTurnTimer: boolean;
+  TurnTime: number;
   GameTime: number;
   LobbyWaitTime: number;
   PlayersPerTable: number;

@@ -1,5 +1,6 @@
 import { UpdateGameTimerPlayer } from '../../Bull/GameTimerQueue';
 import { StopLobbyWaitingTimer, StartLobbyWaitingTimer } from '../../Bull/LobbyTimerQueue';
+import { StartTurnTimer } from '../../Bull/TurnTimer';
 import { GameBasic } from '../../Interface';
 import { Table } from '../Constructors/TableConstructor';
 import {
@@ -20,6 +21,9 @@ const IsFull = async (LAST: Table, Options: GameBasic, UserId: string) => {
       if (FRESHTABLE.Players.length === Options.MinPlayerToStartGame) {
         await StopLobbyWaitingTimer(FRESHTABLE.id);
         await UpdateGameTimerPlayer(FRESHTABLE.id, FRESHTABLE.Players.length);
+        if (Options.isTurnTimer === true) {
+          await StartTurnTimer(FRESHTABLE.id, Options.TurnTime, Options.GameTime);
+        }
         await StartGame(FRESHTABLE.id, Options.GameTime, Options.PlayersPerTable, Options.RemacthWaitTime);
       }
       if (FRESHTABLE.Players.length === Options.PlayersPerTable) {
@@ -32,7 +36,8 @@ const IsFull = async (LAST: Table, Options: GameBasic, UserId: string) => {
           }[] = await GetEmptyTableEntryfee();
           const index = EmptyTableFee.findIndex((x) => x.Tableid === FRESHTABLE.id);
           if (index >= 0) {
-            EmptyTableFee = EmptyTableFee.splice(index, 1);
+            EmptyTableFee.splice(index, 1);
+            EmptyTableFee = EmptyTableFee;
             await SetEmptyTableEntryfee(EmptyTableFee);
           }
         }
@@ -70,7 +75,8 @@ const IsFull = async (LAST: Table, Options: GameBasic, UserId: string) => {
           }[] = await GetEmptyTableEntryfee();
           const index = EmptyTableFee.findIndex((x) => x.Tableid === FRESHTABLE.id);
           if (index >= 0) {
-            EmptyTableFee = EmptyTableFee.splice(index, 1);
+            EmptyTableFee.splice(index, 1);
+            EmptyTableFee = EmptyTableFee;
             await SetEmptyTableEntryfee(EmptyTableFee);
           }
         }
@@ -84,7 +90,9 @@ const IsFull = async (LAST: Table, Options: GameBasic, UserId: string) => {
             await SetEmptyTable(EmptyTable);
           }
         }
-
+        if (Options.isTurnTimer === true) {
+          await StartTurnTimer(FRESHTABLE.id, Options.TurnTime, Options.GameTime);
+        }
         // Start Game For This Table
         await StartGame(FRESHTABLE.id, Options.GameTime, Options.PlayersPerTable, Options.RemacthWaitTime);
       } else {

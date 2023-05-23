@@ -21,6 +21,8 @@
             KeyPath: "", //Provide Here Key Path For Production Purpose
       };
       const GameBasicInfo = {
+            isTurnTimer: false, (typeOf boolean)
+            TurnTime: 30, (In second, typeOf Number)
             GameTime: 3, //Game Time (In Minutes , typeOf Number)
             LobbyWaitTime: 5, //How Many Second Player Wait in lobby For Another Player TO Join Table (In second, typeOf Number)
             isMinPlayerModeOn: true, // PlayersPerTable = 4, if we want to Start Game When 2 Player Availabe Then , True (typeOf boolean)
@@ -37,89 +39,171 @@
 
 ### Hot Feature Of This Package - Gameflow
 
-      const Gameflow = CHESS.GameFlow;
-      const GLobalIO = CHESS.SocketIO;
-      GLobalIO.on('connection', (socket) => {
-            socket.on('REQ', async (Data) => {
-            if (Data.EventName === 'SIGNUP') {
-                  // Do Signup and save User data in Redis Database
-                  await Gameflow.SIGNUP(Data.EventDetails, socket, (error, data) => {
-                  if (data) {
-                  // Send Response To Client Like This
-                  Gameflow.SendToRequester(socket.id, 'Suggestion', data, 'SignUp Sucessfull!!!');
-                  }
-                  if (error) {
-                  // Send Error To Client Like This
-                  Gameflow.SendToRequester(socket.id, 'Suggestion', error.message, 'SignUp is Fail!!!');
-                  }
-                  });
-            }
+      const IO = CHESS.IO;
+      IO.on("connection", async (socket) => {
+      console.log(`Socket Connected, ${socket.id}`);
 
-            if (Data.EventName === 'Login') {
-              await CHESS.Login(USERID, PASSWORD, socket, (error, data) => {
-                  if (error) {
-                        // Send Error To Client Like This
-                        CHESS.SendToRequester(socket.id, 'LOGIN', error.message, 'Login is Fail!!!');
-                  } else {
-                        // Send Response To Client Like This
-                        if (data.Rejoin === true) {
-                        CHESS.SendToRequester(socket.id, 'LOGIN', data.UserData, 'Login Sucessfull!!!');
-                        //Get Table Info
-                        CHESS.GetTable(data.TableId, (error, Tabledata) => {
+      socket.on("SIGNUP", async (EventData) => {
+            const { UserId, UserName, Password } = EventData; // UserId Shoud be Unique,
+            // if GameBasicInfo.isTableWithEntryFee =  false, no need to Add Total Coins
+                  await CHESS.SIGNUP(
+                        { UserId: UserId, UserName: UserName, Password: Password },
+                        socket,
+                        (error, data) => {
                         if (error) {
-                              // Send Error To Client Like This
-                              CHESS.SendToRequester(socket.id, 'REJOIN', error.message, 'REJOIN is Fail!!!');
-                        } else {
-                              //Send Table Data
-                              CHESS.SendToRequester(socket.id, 'REJOIN', Tabledata, 'REJOIN Sucessfull!!!');
-                        }
-                        });
-                        }
-                        if (data.Rejoin === false) {
-                        CHESS.SendToRequester(socket.id, 'LOGIN', data.UserData, 'Login Sucessfull!!!');
-                        //Create Table
-                        CHESS.CreateTable(data.UserData.UserId, (error, Table) => {
-                        if (error) {
-                              CHESS.SendToRequester(socket.id, 'LOGIN', error.message, 'Joining Table Process is Fail!!!');
-                        } else {
-                              CHESS.SendToRequester(socket.id, 'LOGIN', Table, 'Joining Table Process Sucessfull!!!');
-                        }
-                        });
-                        }
-                        }
+                        console.log(error.message);
+                        } else console.log(data);
                   });
-
-                  }
-
+            // if GameBasicInfo.isTableWithEntryFee =  true, Add coins As a Total Coins
+            const {coins} = EventData;
+                  CHESS.SIGNUP(
+                  { UserId: 'Milan1234', UserName: 'Sanjay', Password: 'Sanjay@1234' },
+                  socket,
+                  (error, data) => {
+                  if (error) {
+                        console.log(error.message);
+                  } else console.log(data);
+                  },
+                  coins,
+                  );
             });
 
-            socket.on('disconnect', (reason) => {
-                  console.log('socket disconnected : ' + socket.id, reason);
+            socket.on("Login", async (EventData) => {
+                  const { UserId, Password } = EventData; // UserId Shoud be Unique
+                  await CHESS.Login(UserId, Password, socket, (error, data) => {
+                        if (error) {
+                        console.log(error.message);
+                        } else console.log(data);
+                  });
             });
-      });
+
+            socket.on("Join_Table", async (EventData) => {
+            const { UserId } = socket.handshake.auth.UserDetails;
+
+            //if GameBasicInfo.isTableWithEntryFee =  false, entryFee igonre
+                  await CHESS.CreateTable(UserId, (error, table) => {
+                        if (error) {
+                        console.log(error.message);
+                        } else {
+                        console.log(table);
+                        }
+                  });
+            //if GameBasicInfo.isTableWithEntryFee =  true, entryFee Add
+            const { EntryFee } = EventData; // EntryFee Shoud Be in number, Like 500, 300 as a coins;
+                  await CHESS.CreateTable(
+                        UserId,
+                        (error, table) => {
+                        if (error) {
+                        console.log(error.message);
+                        } else {
+                        console.log(table);
+                        }
+                        },
+                        EntryFee
+                  );
+            });
+
+            socket.on("ReMatch", async (EventData) => {
+            const { Response } = EventData; // Response Shoud Be boolean = If Agree then True;
+                  await CHESS.ReMatch(Response, socket, (result) => {
+                        console.log(result);
+                  });
+            });
+
+            // Send response to Client Like This
+            socket.on("Login", async (EventData) => {
+            const { UserId, Password } = EventData; // UserId Shoud be Unique
+                  await CHESS.Login(UserId, Password, socket, (error, data) => {
+                        if (error) {
+                        CHESS.EventSender.SendEventToUserByUserId(
+                        UserId,
+                        "Login_Error",
+                        error,
+                        "Login Is Fail"
+                        );
+                        } else {
+                        CHESS.EventSender.SendEventToUserByUserId(
+                        UserId,
+                        "Login_Error",
+                        data,
+                        "Login Is Succesfull"
+                        );
+                        }
+                  });
+            });
+
+            // Send Response Or Any Event To Table
+            CHESS.EventSender.EventToTable("TableId", "EventName", "EventData");
+
+            socket.on("disconnect", (reason) => {
+                  console.log("socket disconnected : " + socket.id, reason);
+                  });
+            });
+
+
+            // To Get USER DATA :
+                  const key = `USER:${UserId}`;
+                  let User = await CHESS.RedisClients.Redis.get(key);
+                  User = JSON.parse(User);
+
+            // To Get Table Details:
+                  const key = `Table:${Tableid}`;
+                  let TableData = await CHESS.RedisClients.Redis.get(key);
+                  TableData = JSON.parse(TableData);
 
 ### Manage Game Flow
 
-            CHESS.LobbyTimer((LobbyData) => {
-              console.log(LobbyData);
+            CHESS.GameTimer.LobbyTimer((LobbyData) => {
+                  // LobbyData = {
+                  //   LobbyTableID: 'XYZ';
+                  //   UserId: 'USERID';
+                  //   MSG: 'Lobby Time Over For User Id : USERID, Can't Start Game Player Not Found';
+                  //   }
+                  console.log(LobbyData, "LobbyData");
+                  // Send Create table Event Again After Some Time
+            });
+            CHESS.GameTimer.GameStarted((GameStartedData) => {
+                  // GameStartedData = {
+                  //   TableID: 'XYZ',
+                  //   MSG: 'Game  Started For Table Id : 'XYZ'',
+                  //   }
+                  console.log(GameStartedData, "GameStarted");
+                  // Start Game By Table Details (add Your Own Logic According To Game)
+            });
+            CHESS.GameTimer.GameTimeOver((GameTimeOverData) => {
+                  // GameTimeOverData = {
+                  //   TableID: 'XYZ';
+                  //   MSG: 'Game Time Over For Table Id : 'XYZ'';
+                  //   }
+                  console.log(GameTimeOverData, "GameTimeOver");
+                  // Get Table and Check Score and do Further Process (add Your Own Logic According To Game)
             });
 
-            CHESS.GameStarted((GameData) => {
-             console.log(GameData);
+            CHESS.GameTimer.RematchTimeOver((RematchTimeData) => {
+                  //   RematchTimeData = {
+                  //     TableID: 'XYZ';
+                  //     ReMatchResponse: {id: string,
+                  //   True: ['USERID'],
+                  //   False: ['USERID'],
+                  // };
+                  //     MSG: "All Player Denied For Rematch";
+                  // }
+                  console.log(RematchTimeData, "RematchTimeOver");
             });
-             CHESS.GameTimeOver((GameData) => {
-              console.log(GameData);
-             });
 
-            CHESS.RematchTimeOver((GameData) => {
-            console.log(GameData);
+            CHESS.GameTimer.TurnChange((TurnChangeData) => {
+                  //   TurnChangeData =  {
+                  //     TableID: 'XYZ';
+                  //     MSG: 'Please Change Turn For TableId';
+                  // }
+                  console.log(TurnChangeData, "TurnChange");
+                  // Get Table Details and Do Change Turn (add Your Own Logic According To Game)
             });
 
 ### Socket IO
 
-      const RedisFunctions = CHESS.RedisFunction;
-      const GLobalIO = CHESS.SocketIO;
-      GLobalIO.on("connection", (socket: Socket) => {
+      const IO = CHESS.IO;
+      IO.on("connection", (socket: Socket) => {
         console.log(`Socket Connected, ${socket.id}`);
 
         socket.onAny(async (event, eventData) => {

@@ -18,7 +18,7 @@ const LobbyTimerQueue = new Bull('lobby-timer-queue');
 const LobbyTimerQueueWork = async (Tableid: string) => {
   try {
     const Tablel: Table = await getTable(Tableid);
-    if (!Table) {
+    if (!Tablel) {
       // Logger.error(
       //   `Table Not Found At LobbyTimerQueueWork To Remove Player For TableId :: ${Tableid}`
       // );
@@ -39,7 +39,8 @@ const LobbyTimerQueueWork = async (Tableid: string) => {
       }[] = await GetEmptyTableEntryfee();
       const index = EmptyTableFee.findIndex((x) => x.Tableid === Tablel.id);
       if (index >= 0) {
-        EmptyTableFee = EmptyTableFee.splice(index, 1);
+        EmptyTableFee.splice(index, 1);
+        EmptyTableFee = EmptyTableFee;
         await SetEmptyTableEntryfee(EmptyTableFee);
       }
     }

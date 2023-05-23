@@ -27,6 +27,7 @@ import { SitInTable } from '../Services/MatchMaking/SitInTable';
 import { ModelOptions } from './GameBasicClass';
 import { Rematch } from '../Services/MatchMaking/ReMatch';
 import { TimerAll } from '../Bull/TimerAll';
+import { EventToTable, SendBySocketId, SendEventToUserByUserId } from '../Services/CallBack/EventToTable';
 
 export class Game extends ModelOptions {
   IO: Server;
@@ -38,25 +39,18 @@ export class Game extends ModelOptions {
   };
   ExpressApp: express.Application;
   GameTimer: {
-    LobbyTimer: (callback: (Data: {
-      LobbyTableID: string;
-      UserId: string;
-      MSG: string;
-  }) => void) => void;
-  GameStarted: (callback: (Data: {
-    TableID: string;
-    MSG: string;
-}) => void) => void;
-GameTimeOver: (callback: (Data: {
-  TableID: string;
-  MSG: string;
-}) => void) => void;
-RematchTimeOver: (callback: (Data: {
-  TableID: string;
-  ReMatchResponse: any;
-  MSG: string;
-}) => void) => void
+    LobbyTimer: (callback: (Data: { LobbyTableID: string; UserId: string; MSG: string }) => void) => void;
+    GameStarted: (callback: (Data: { TableID: string; MSG: string }) => void) => void;
+    GameTimeOver: (callback: (Data: { TableID: string; MSG: string }) => void) => void;
+    RematchTimeOver: (callback: (Data: { TableID: string; ReMatchResponse: any; MSG: string }) => void) => void;
+    TurnChange: (callback: (Data: { TableID: string; MSG: string }) => void) => void;
   };
+  EventSender: {
+    EventToTable: (TableId: string, EventName: string, SendData: any) => Promise<void>;
+    SendBySocketId: (SocketId: string, EventName: string, EventDetails: any, Message: any) => void;
+    SendEventToUserByUserId: (UserId: string, EventName: string, EventDetails: any, Message: string) => Promise<void>;
+  };
+  // Todo DisConnect Handler, Remove Timer , ReconnectWithin
   constructor(isLocal: boolean, Redis: REDISConnection, HTTPS: HTTPSConnection, gameBasics: GameBasic) {
     super(gameBasics);
     try {
@@ -89,8 +83,8 @@ RematchTimeOver: (callback: (Data: {
       subClient,
     };
     this.GameTimer = TimerAll;
+    this.EventSender = { EventToTable, SendBySocketId, SendEventToUserByUserId };
   }
-
 
   async ReMatch(
     Response: boolean,
@@ -105,7 +99,6 @@ RematchTimeOver: (callback: (Data: {
       callback({ Status: 'Success', message: Return.msg });
     }
   }
-
 
   async Login(
     UserID: string,
@@ -157,22 +150,6 @@ RematchTimeOver: (callback: (Data: {
         },
         null,
       );
-    }
-  }
-
-  // Send to Clien
-
-  SendToRequester(SendTo: string, EventName: string, EventDetails: any, Message: any) {
-    try {
-      io.to(SendTo).emit(
-        EventName,
-        JSON.stringify({
-          EventDetails,
-          Message,
-        }),
-      );
-    } catch (error: any) {
-      // Logger.error(`Error At CallBack: ${error.message}`);
     }
   }
 
@@ -284,13 +261,14 @@ RematchTimeOver: (callback: (Data: {
       if (this.options.isTableWithEntryFee === true) {
         if (EntryFee) {
           //  Create Table With Entry Fee
-          const EmptyTable: {
+          let EmptyTable: {
             Tableid: string;
             EntryFee: number;
           }[] = await GetEmptyTableEntryfee();
           if (EmptyTable && EmptyTable.length === 0) {
             const NewEmptyTable: string = new mongoose.Types.ObjectId().toString();
             EmptyTable.push({ Tableid: NewEmptyTable, EntryFee });
+            EmptyTable = EmptyTable;
             await SetEmptyTableEntryfee(EmptyTable);
             PlayerTL.TableId = NewEmptyTable;
             PlayerTL = PlayerTL;
@@ -326,11 +304,12 @@ RematchTimeOver: (callback: (Data: {
           );
         }
       } else {
-        const EmptyTable: string[] = await GetEmptyTable();
+        let EmptyTable: string[] = await GetEmptyTable();
         if (EmptyTable && EmptyTable.length === 0) {
           // Create a new table
           const NewEmptyTable: string = new mongoose.Types.ObjectId().toString();
           EmptyTable.push(NewEmptyTable);
+          EmptyTable = EmptyTable;
           await SetEmptyTable(EmptyTable);
           // Add in a new table
           PlayerTL.TableId = NewEmptyTable;
@@ -369,23 +348,6 @@ RematchTimeOver: (callback: (Data: {
         },
         null,
       );
-    }
-  }
-
-  // Send to User By UserId
-  async SendEventToUser(UserId: string, EventName: string, EventDetails: any, Message: string) {
-    try {
-      const PlayerLAST: Player = await GetUser(UserId);
-
-      io.to(PlayerLAST.soketId).emit(
-        EventName,
-        JSON.stringify({
-          EventDetails,
-          Message,
-        }),
-      );
-    } catch (error: any) {
-      // Logger.error(`Error At CallBack: ${error.message}`);
     }
   }
 }

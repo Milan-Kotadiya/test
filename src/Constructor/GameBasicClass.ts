@@ -2,6 +2,8 @@ import { GameBasic } from '../Interface';
 
 export class ModelOptions {
   options: GameBasic = {
+    isTurnTimer: true,
+    TurnTime: 30,
     GameTime: 3, // Game Time (In Minutes , typeOf Number)
     LobbyWaitTime: 5, // How Many Seconds, Player Wait in lobby For Another Player TO Join Table (In second, typeOf Number)
     PlayersPerTable: 4, // How Many Player's Need On Table TO Start Game (typeOf Number)
