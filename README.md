@@ -57,7 +57,7 @@
             // if GameBasicInfo.isTableWithEntryFee =  true, Add coins As a Total Coins
             const {coins} = EventData;
                   CHESS.SIGNUP(
-                  { UserId: 'Milan1234', UserName: 'Sanjay', Password: 'Sanjay@1234' },
+                  { UserId: UserId, UserName: UserName, Password: Password },
                   socket,
                   (error, data) => {
                   if (error) {
@@ -208,11 +208,6 @@
 
         socket.onAny(async (event, eventData) => {
           console.log(`got event ${event} and Data is ${JSON.stringify(eventData)}`);
-          if (event === "Signup") {
-            await RedisFunctions.SetKey(event, eventData);
-            const Data = await RedisFunctions.GetKey(event);
-            console.log(`Getted Data From Redis :: ${JSON.stringify(Data)}`);
-          }
         });
 
         socket.on("disconnect", (reason) => {
