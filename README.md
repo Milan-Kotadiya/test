@@ -8,7 +8,7 @@
 ### How to use
 
       import { Game } from "gamemilanmodel";
-      import { Socket } from "socket.io";
+
       const REDIS = {
             Host: "127.0.0.1",
             Port: "6379",
